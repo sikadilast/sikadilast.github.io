@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtPrompt Pro - 画风反推与提示词优化大师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#722ED1',
+                        accent: '#0FC6C2',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129',
+                        'dark-800': '#272E3B',
+                        'dark-700': '#363E4A',
+                        'dark-600': '#4E5969',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                },
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .bg-glass {
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-dark-800 to-dark text-white min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-glass border-b border-white/10 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                    <i class="fa fa-paint-brush text-white text-xl"></i>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-primary to-accent text-gradient">ArtPrompt Pro</span>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#home" class="text-white/80 hover:text-white transition-colors">首页</a>
+                <a href="#reverse" class="text-white/80 hover:text-white transition-colors">画风反推</a>
+                <a href="#analyze" class="text-white/80 hover:text-white transition-colors">提示词分析</a>
+                <a href="#features" class="text-white/80 hover:text-white transition-colors">功能特点</a>
+                <a href="#examples" class="text-white/80 hover:text-white transition-colors">使用示例</a>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="hidden md:block px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-all">
+                    <i class="fa fa-history mr-2"></i>历史记录
+                </button>
+                <button class="px-5 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/25 transition-all transform hover:-translate-y-0.5">
+                    开始使用
+                </button>
+                <button class="md:hidden text-white text-xl" id="mobile-menu-btn">
+                    <i class="fa fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div class="md:hidden hidden bg-dark-800 border-t border-white/10" id="mobile-menu">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-4">
+                <a href="#home" class="text-white/80 hover:text-white py-2 transition-colors">首页</a>
+                <a href="#reverse" class="text-white/80 hover:text-white py-2 transition-colors">画风反推</a>
+                <a href="#analyze" class="text-white/80 hover:text-white py-2 transition-colors">提示词分析</a>
+                <a href="#features" class="text-white/80 hover:text-white py-2 transition-colors">功能特点</a>
+                <a href="#examples" class="text-white/80 hover:text-white py-2 transition-colors">使用示例</a>
+                <button class="w-full px-4 py-2 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary transition-all text-left">
+                    <i class="fa fa-history mr-2"></i>历史记录
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区 -->
+    <section id="home" class="pt-28 pb-20 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse-slow"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 1s;"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 2s;"></div>
+        </div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-[clamp(2.5rem,5vw,4rem)] font-bold leading-tight mb-6">
+                    <span class="bg-gradient-to-r from-primary via-secondary to-accent text-gradient">AI画风反推</span>
+                    <br>与提示词智能优化
+                </h1>
+                <p class="text-[clamp(1rem,2vw,1.25rem)] text-white/70 mb-10 max-w-2xl mx-auto">
+                    上传任意图片，多模型联合反推精准画风提示词。智能分析提示词冲突，一键生成最佳优化结果，让你的AI绘画作品更上一层楼。
+                </p>
+                
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                    <a href="#reverse" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-secondary hover:shadow-xl hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-lg font-medium">
+                        <i class="fa fa-magic mr-2"></i>立即体验画风反推
+                    </a>
+                    <a href="#analyze" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all transform hover:-translate-y-1 text-lg font-medium">
+                        <i class="fa fa-search mr-2"></i>分析我的提示词
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-primary/30 transition-all">
+                        <div class="text-3xl font-bold text-primary mb-2">6+</div>
+                        <div class="text-white/60">多模态模型</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-primary/30 transition-all">
+                        <div class="text-3xl font-bold text-secondary mb-2">98%</div>
+                        <div class="text-white/60">画风还原度</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-primary/30 transition-all">
+                        <div class="text-3xl font-bold text-accent mb-2">0.5s</div>
+                        <div class="text-white/60">冲突检测速度</div>
+                    </div>
+                    <div class="bg-white/5 rounded-xl p-6 border border-white/10 hover:border-primary/30 transition-all">
+                        <div class="text-3xl font-bold text-success mb-2">100万+</div>
+                        <div class="text-white/60">提示词数据库</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 画风反推功能区 -->
+    <section id="reverse" class="py-20 bg-dark-800/50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">多模型联合画风反推</h2>
+                <p class="text-white/70 max-w-2xl mx-auto">
+                    上传一张图片，我们将使用多个顶尖多模态模型同时分析，综合对比得出最准确的画风描述和完整提示词
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 左侧：图片上传区 -->
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fa fa-upload text-primary mr-2"></i>上传参考图片
+                    </h3>
+                    
+                    <div 
+                        id="upload-area" 
+                        class="border-2 border-dashed border-white/20 rounded-xl p-8 text-center hover:border-primary/50 transition-all cursor-pointer mb-6"
+                    >
+                        <div id="upload-placeholder">
+                            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
+                                <i class="fa fa-image text-primary text-2xl"></i>
+                            </div>
+                            <p class="text-white/70 mb-2">拖拽图片到这里或点击上传</p>
+                            <p class="text-white/40 text-sm">支持 JPG, PNG, WEBP 格式，最大 10MB</p>
+                        </div>
+                        <img id="preview-image" class="hidden max-h-80 mx-auto rounded-lg" alt="预览图片">
+                    </div>
+                    
+                    <input type="file" id="file-input" class="hidden" accept="image/*">
+                    
+                    <div class="mb-6">
+                        <h4 class="text-white/80 mb-3 font-medium">选择反推模型</h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-primary">
+                                <span>GPT-4o</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-primary">
+                                <span>Claude 3 Opus</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-primary">
+                                <span>Gemini Advanced</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-primary">
+                                <span>Midjourney Describe</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" class="accent-primary">
+                                <span>DALL-E 3</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" class="accent-primary">
+                                <span>Stable Diffusion</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-white/80 mb-3 font-medium">反推深度</h4>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-white/50 text-sm">基础</span>
+                            <input type="range" min="1" max="3" value="2" class="w-full accent-primary" id="depth-slider">
+                            <span class="text-white/50 text-sm">深度</span>
+                        </div>
+                        <div class="flex justify-between mt-1 text-xs text-white/40">
+                            <span>仅核心画风</span>
+                            <span>完整细节</span>
+                            <span>技术参数</span>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        id="reverse-btn" 
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/25 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fa fa-magic mr-2"></i>开始反推画风
+                    </button>
+                </div>
+                
+                <!-- 右侧：结果展示区 -->
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fa fa-list-alt text-secondary mr-2"></i>反推结果
+                        </h3>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 transition-all text-sm" id="copy-all-btn">
+                                <i class="fa fa-copy mr-1"></i>复制全部
+                            </button>
+                            <button class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 transition-all text-sm" id="export-btn">
+                                <i class="fa fa-download mr-1"></i>导出
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="results-placeholder" class="flex flex-col items-center justify-center h-[400px] text-center">
+                        <div class="w-20 h-20 mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                            <i class="fa fa-lightbulb-o text-white/30 text-3xl"></i>
+                        </div>
+                        <p class="text-white/50">上传图片并点击"开始反推"<br>查看多模型联合分析结果</p>
+                    </div>
+                    
+                    <div id="results-container" class="hidden">
+                        <!-- 模型对比标签页 -->
+                        <div class="flex overflow-x-auto scrollbar-hide mb-4 space-x-2 pb-2">
+                            <button class="px-4 py-2 rounded-lg bg-primary text-white text-sm whitespace-nowrap model-tab active" data-model="combined">
+                                综合最佳
+                            </button>
+                            <button class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-sm whitespace-nowrap model-tab" data-model="gpt4o">
+                                GPT-4o
+                            </button>
+                            <button class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-sm whitespace-nowrap model-tab" data-model="claude3">
+                                Claude 3 Opus
+                            </button>
+                            <button class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-sm whitespace-nowrap model-tab" data-model="gemini">
+                                Gemini Advanced
+                            </button>
+                            <button class="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white/80 text-sm whitespace-nowrap model-tab" data-model="midjourney">
+                                Midjourney
+                            </button>
+                        </div>
+                        
+                        <!-- 结果内容 -->
+                        <div class="bg-dark-800/50 rounded-xl p-4 mb-4 max-h-[300px] overflow-y-auto">
+                            <div id="combined-result" class="model-result">
+                                <p class="text-white/90 leading-relaxed" id="final-prompt">
+                                    宫崎骏风格动画场景，吉卜力工作室，手绘水彩质感，柔和的色彩渐变，温暖的午后阳光透过树叶洒下斑驳光影，宁静的乡村小路，远处是连绵的青山和白云，细节丰富的自然景观，治愈系氛围，电影级构图，8k分辨率
+                                </p>
+                            </div>
+                            <div id="gpt4o-result" class="model-result hidden">
+                                <p class="text-white/90 leading-relaxed">
+                                    宫崎骏动画风格，吉卜力工作室美术风格，传统手绘动画，水彩渲染技术，柔和的色彩调色板，温暖的金色阳光，透过树叶的丁达尔效应，乡村田园风光，蜿蜒的小路，远处的山峦和云朵，细腻的笔触，自然主义细节，宁静祥和的氛围，电影镜头感
+                                </p>
+                            </div>
+                            <div id="claude3-result" class="model-result hidden">
+                                <p class="text-white/90 leading-relaxed">
+                                    宫崎骏执导的动画电影场景，吉卜力标志性画风，手绘水彩与数字绘画结合，柔和的边缘处理，温暖的色调，午后阳光穿过树冠形成的光斑，乡村小径延伸向远方，背景是层叠的青山和蓬松的白云，丰富的植物细节，治愈系美学，宽屏电影构图
+                                </p>
+                            </div>
+                            <div id="gemini-result" class="model-result hidden">
+                                <p class="text-white/90 leading-relaxed">
+                                    吉卜力工作室动画风格，宫崎骏特色画风，手绘质感，水彩渲染效果，柔和明亮的色彩，温暖的自然光线，阳光透过树叶的光影效果，宁静的乡村景色，绿色的田野和远山，蓝天白云，精细的自然细节，温馨治愈的氛围，电影级别的画面质量
+                                </p>
+                            </div>
+                            <div id="midjourney-result" class="model-result hidden">
+                                <p class="text-white/90 leading-relaxed">
+                                    Studio Ghibli style, Hayao Miyazaki, anime background, watercolor painting, soft colors, warm sunlight filtering through trees, dappled light, peaceful countryside, rolling hills, fluffy clouds, detailed nature, serene atmosphere, cinematic composition --ar 16:9 --style raw
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- 画风分析 -->
+                        <div>
+                            <h4 class="font-medium mb-2 text-white/80">提取的画风元素</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 rounded-full bg-primary/20 text-primary text-sm">宫崎骏风格</span>
+                                <span class="px-3 py-1 rounded-full bg-secondary/20 text-secondary text-sm">吉卜力工作室</span>
+                                <span class="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm">手绘水彩</span>
+                                <span class="px-3 py-1 rounded-full bg-success/20 text-success text-sm">柔和色彩</span>
+                                <span class="px-3 py-1 rounded-full bg-warning/20 text-warning text-sm">温暖阳光</span>
+                                <span class="px-3 py-1 rounded-full bg-danger/20 text-danger text-sm">治愈系</span>
+                                <span class="px-3 py-1 rounded-full bg-white/20 text-white/80 text-sm">电影级构图</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 提示词分析功能区 -->
+    <section id="analyze" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">智能提示词冲突分析</h2>
+                <p class="text-white/70 max-w-2xl mx-auto">
+                    输入你的提示词，我们将智能分析其中的冲突点、冗余内容和优化建议，一键生成最佳版本
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- 左侧：提示词输入区 -->
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fa fa-pencil text-accent mr-2"></i>输入你的提示词
+                    </h3>
+                    
+                    <textarea 
+                        id="prompt-input" 
+                        class="w-full h-48 bg-dark-800/50 border border-white/10 rounded-xl p-4 text-white/90 placeholder-white/40 focus:border-accent/50 focus:outline-none resize-none mb-4"
+                        placeholder="例如：一个美丽的女孩，写实风格，卡通渲染，赛博朋克背景，中世纪服装，明亮的阳光，黑暗的城市..."
+                    ></textarea>
+                    
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-white/50 text-sm">
+                            <span id="char-count">0</span> 字符
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 transition-all text-sm" id="clear-btn">
+                                <i class="fa fa-trash mr-1"></i>清空
+                            </button>
+                            <button class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 transition-all text-sm" id="example-btn">
+                                <i class="fa fa-lightbulb-o mr-1"></i>示例
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-white/80 mb-3 font-medium">分析选项</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-accent">
+                                <span>冲突检测</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-accent">
+                                <span>冗余分析</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-accent">
+                                <span>权重优化</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-all">
+                                <input type="checkbox" checked class="accent-accent">
+                                <span>风格增强</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        id="analyze-btn" 
+                        class="w-full py-3 rounded-xl bg-gradient-to-r from-accent to-primary hover:shadow-lg hover:shadow-accent/25 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <i class="fa fa-search mr-2"></i>分析并优化提示词
+                    </button>
+                </div>
+                
+                <!-- 右侧：分析结果区 -->
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold flex items-center">
+                            <i class="fa fa-bar-chart text-accent mr-2"></i>分析结果
+                        </h3>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 transition-all text-sm" id="copy-optimized-btn">
+                                <i class="fa fa-copy mr-1"></i>复制优化版
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="analysis-placeholder" class="flex flex-col items-center justify-center h-[400px] text-center">
+                        <div class="w-20 h-20 mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                            <i class="fa fa-search text-white/30 text-3xl"></i>
+                        </div>
+                        <p class="text-white/50">输入提示词并点击"分析并优化"<br>查看详细的冲突分析和优化建议</p>
+                    </div>
+                    
+                    <div id="analysis-container" class="hidden">
+                        <!-- 冲突检测 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fa fa-exclamation-triangle text-danger mr-2"></i>
+                                检测到的冲突点 <span class="ml-2 px-2 py-0.5 rounded-full bg-danger/20 text-danger text-xs">3个</span>
+                            </h4>
+                            
+                            <div class="space-y-3">
+                                <div class="bg-danger/10 border border-danger/20 rounded-lg p-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-medium text-danger">风格冲突</span>
+                                        <span class="text-xs bg-danger/20 text-danger px-2 py-0.5 rounded-full">高优先级</span>
+                                    </div>
+                                    <p class="text-white/70 text-sm">
+                                        "写实风格" 与 "卡通渲染" 存在严重风格冲突，同时使用会导致AI生成结果混乱
+                                    </p>
+                                </div>
+                                
+                                <div class="bg-warning/10 border border-warning/20 rounded-lg p-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-medium text-warning">时代背景冲突</span>
+                                        <span class="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full">中优先级</span>
+                                    </div>
+                                    <p class="text-white/70 text-sm">
+                                        "赛博朋克背景" 与 "中世纪服装" 时代背景不匹配，可能产生不合理的视觉效果
+                                    </p>
+                                </div>
+                                
+                                <div class="bg-warning/10 border border-warning/20 rounded-lg p-3">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="font-medium text-warning">光线冲突</span>
+                                        <span class="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded-full">中优先级</span>
+                                    </div>
+                                    <p class="text-white/70 text-sm">
+                                        "明亮的阳光" 与 "黑暗的城市" 光线条件相反，会导致整体氛围不统一
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 优化建议 -->
+                        <div class="mb-6">
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fa fa-lightbulb-o text-success mr-2"></i>
+                                优化建议
+                            </h4>
+                            
+                            <div class="bg-dark-800/50 rounded-lg p-3">
+                                <ul class="space-y-2 text-white/70 text-sm">
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-success mr-2 mt-0.5"></i>
+                                        <span>选择一种主要风格：保留"卡通渲染"，移除"写实风格"</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-success mr-2 mt-0.5"></i>
+                                        <span>统一时代背景：将"中世纪服装"改为"未来主义赛博朋克服装"</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-success mr-2 mt-0.5"></i>
+                                        <span>统一光线氛围：保留"黑暗的城市"，将"明亮的阳光"改为"霓虹灯照明"</span>
+                                    </li>
+                                    <li class="flex items-start">
+                                        <i class="fa fa-check-circle text-success mr-2 mt-0.5"></i>
+                                        <span>增加细节描述：添加角色特征、构图方式和画质参数</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- 优化后的提示词 -->
+                        <div>
+                            <h4 class="font-medium mb-3 flex items-center">
+                                <i class="fa fa-star text-accent mr-2"></i>
+                                优化后的提示词
+                            </h4>
+                            
+                            <div class="bg-dark-800/50 rounded-lg p-4 max-h-[150px] overflow-y-auto">
+                                <p class="text-white/90 leading-relaxed" id="optimized-prompt">
+                                    一个美丽的女孩，卡通渲染风格，赛博朋克背景，未来主义赛博朋克服装，霓虹灯光照明，黑暗的未来城市，高楼大厦，飞行汽车，全息广告，精细的面部特征，电影级构图，8k分辨率，高细节
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 功能特点 -->
+    <section id="features" class="py-20 bg-dark-800/50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">为什么选择 ArtPrompt Pro</h2>
+                <p class="text-white/70 max-w-2xl mx-auto">
+                    我们提供最全面的AI绘画提示词解决方案，让你的创作效率提升10倍
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-sitemap text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">多模型联合分析</h3>
+                    <p class="text-white/70">
+                        同时调用GPT-4o、Claude 3、Gemini等多个顶尖多模态模型，综合对比得出最准确的结果，避免单一模型的局限性。
+                    </p>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-secondary/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-exclamation-triangle text-secondary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">智能冲突检测</h3>
+                    <p class="text-white/70">
+                        基于百万级提示词数据库，智能识别风格、色彩、光线、主题等多维度的冲突点，提供详细的解决方案。
+                    </p>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-accent/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-magic text-accent text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">一键优化生成</h3>
+                    <p class="text-white/70">
+                        自动修复冲突，移除冗余内容，优化关键词权重，添加专业的画质和构图参数，一键生成最佳提示词。
+                    </p>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-success/30 hover:shadow-lg hover:shadow-success/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-success/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-database text-success text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">海量画风数据库</h3>
+                    <p class="text-white/70">
+                        收录超过100万种艺术风格、艺术家、流派和技术参数，支持精确到具体艺术家和作品的画风反推。
+                    </p>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-warning/30 hover:shadow-lg hover:shadow-warning/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-warning/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-history text-warning text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">历史记录管理</h3>
+                    <p class="text-white/70">
+                        自动保存所有反推和分析记录，支持搜索、筛选和导出，方便你随时查看和复用之前的结果。
+                    </p>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 p-6 hover:border-danger/30 hover:shadow-lg hover:shadow-danger/10 transition-all transform hover:-translate-y-1">
+                    <div class="w-14 h-14 rounded-xl bg-danger/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-share-alt text-danger text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">多平台适配</h3>
+                    <p class="text-white/70">
+                        自动适配Midjourney、Stable Diffusion、DALL-E等主流AI绘画平台的语法和参数，生成针对性的提示词。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 使用示例 -->
+    <section id="examples" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">使用示例</h2>
+                <p class="text-white/70 max-w-2xl mx-auto">
+                    看看其他用户如何使用ArtPrompt Pro提升他们的AI绘画作品质量
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 overflow-hidden hover:shadow-xl hover:shadow-primary/10 transition-all transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center">
+                        <img src="https://picsum.photos/seed/example1/600/400" alt="宫崎骏风格示例" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold mb-2">宫崎骏风格反推</h3>
+                        <p class="text-white/70 text-sm mb-4">
+                            上传一张吉卜力风格的图片，反推得到精准的画风提示词，完美还原原作的手绘质感和治愈氛围。
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 rounded-full bg-primary/20 text-primary text-xs">宫崎骏</span>
+                            <span class="px-2 py-1 rounded-full bg-secondary/20 text-secondary text-xs">吉卜力</span>
+                            <span class="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">手绘水彩</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 overflow-hidden hover:shadow-xl hover:shadow-primary/10 transition-all transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-secondary/30 to-accent/30 flex items-center justify-center">
+                        <img src="https://picsum.photos/seed/example2/600/400" alt="赛博朋克风格示例" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold mb-2">赛博朋克冲突修复</h3>
+                        <p class="text-white/70 text-sm mb-4">
+                            分析并修复了提示词中的风格和光线冲突，生成了更加统一和专业的赛博朋克场景提示词。
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 rounded-full bg-primary/20 text-primary text-xs">赛博朋克</span>
+                            <span class="px-2 py-1 rounded-full bg-secondary/20 text-secondary text-xs">冲突检测</span>
+                            <span class="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">优化生成</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-dark-700/50 rounded-2xl border border-white/10 overflow-hidden hover:shadow-xl hover:shadow-primary/10 transition-all transform hover:-translate-y-2">
+                    <div class="h-48 bg-gradient-to-br from-accent/30 to-success/30 flex items-center justify-center">
+                        <img src="https://picsum.photos/seed/example3/600/400" alt="油画风格示例" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold mb-2">古典油画风格反推</h3>
+                        <p class="text-white/70 text-sm mb-4">
+                            精确识别出伦勃朗的油画风格，包括光影技法、色彩运用和笔触特点，生成高度还原的提示词。
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 rounded-full bg-primary/20 text-primary text-xs">伦勃朗</span>
+                            <span class="px-2 py-1 rounded-full bg-secondary/20 text-secondary text-xs">古典油画</span>
+                            <span class="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">光影技法</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 常见问题 -->
+    <section class="py-20 bg-dark-800/50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold mb-4">常见问题</h2>
+                <p class="text-white/70 max-w-2xl mx-auto">
+                    关于ArtPrompt Pro的常见问题解答，如有其他疑问请联系我们
+                </p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto">
+                <div class="space-y-4">
+                    <div class="bg-dark-700/50 rounded-xl border border-white/10 overflow-hidden">
+                        <button class="w-full px-6 py-4 text-left flex justify-between items-center faq-btn">
+                            <span class="font-medium">ArtPrompt Pro支持哪些AI绘画平台？</span>
+                            <i class="fa fa-chevron-down text-white/50 transition-transform"></i>
+                        </button>
+                        <div class="px-6 pb-4 hidden faq-content">
+                            <p class="text-white/70">
+                                ArtPrompt Pro支持所有主流AI绘画平台，包括Midjourney、Stable Diffusion、DALL-E 3、Leonardo AI等。我们会根据不同平台的语法和参数特点，生成针对性的优化提示词。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-dark-700/50 rounded-xl border border-white/10 overflow-hidden">
+                        <button class="w-full px-6 py-4 text-left flex justify-between items-center faq-btn">
+                            <span class="font-medium">画风反推的准确率有多高？</span>
+                            <i class="fa fa-chevron-down text-white/50 transition-transform"></i>
+                        </button>
+                        <div class="px-6 pb-4 hidden faq-content">
+                            <p class="text-white/70">
+                                我们使用多模型联合分析技术，综合多个顶尖AI模型的结果，画风还原度可以达到98%以上。对于知名艺术家和经典艺术风格，准确率几乎可以达到100%。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-dark-700/50 rounded-xl border border-white/10 overflow-hidden">
+                        <button class="w-full px-6 py-4 text-left flex justify-between items-center faq-btn">
+                            <span class="font-medium">提示词冲突分析能检测哪些类型的冲突？</span>
+                            <i class="fa fa-chevron-down text-white/50 transition-transform"></i>
+                        </button>
+                        <div class="px-6 pb-4 hidden faq-content">
+                            <p class="text-white/70">
+                                我们的冲突分析系统可以检测多种类型的冲突，包括：风格冲突、时代背景冲突、光线冲突、色彩冲突、主题冲突、空间关系冲突等。同时还能识别冗余内容和低权重关键词。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-dark-700/50 rounded-xl border border-white/10 overflow-hidden">
+                        <button class="w-full px-6 py-4 text-left flex justify-between items-center faq-btn">
+                            <span class="font-medium">我的历史记录会被保存多久？</span>
+                            <i class="fa fa-chevron-down text-white/50 transition-transform"></i>
+                        </button>
+                        <div class="px-6 pb-4 hidden faq-content">
+                            <p class="text-white/70">
+                                免费用户的历史记录会保存30天，专业版用户的历史记录会永久保存。你可以随时导出或删除你的历史记录，我们非常重视用户的数据隐私和安全。
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-dark-700/50 rounded-xl border border-white/10 overflow-hidden">
+                        <button class="w-full px-6 py-4 text-left flex justify-between items-center faq-btn">
+                            <span class="font-medium">有免费使用额度吗？</span>
+                            <i class="fa fa-chevron-down text-white/50 transition-transform"></i>
+                        </button>
+                        <div class="px-6 pb-4 hidden faq-content">
+                            <p class="text-white/70">
+                                是的，我们为所有用户提供每天5次免费的画风反推和提示词分析机会。如果你需要更多使用次数，可以升级到专业版，享受无限使用和更多高级功能。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 行动召唤 -->
+    <section class="py-20 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full">
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-3xl animate-pulse-slow"></div>
+        </div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-3xl mx-auto text-center">
+                <h2 class="text-[clamp(2rem,4vw,3rem)] font-bold mb-6">
+                    开始提升你的AI绘画创作效率
+                </h2>
+                <p class="text-white/70 text-lg mb-10">
+                    无需再为提示词烦恼，让ArtPrompt Pro帮你生成专业级的提示词，创作出令人惊艳的AI绘画作品
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#reverse" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-secondary hover:shadow-xl hover:shadow-primary/25 transition-all transform hover:-translate-y-1 text-lg font-medium">
+                        免费开始使用
+                    </a>
+                    <button class="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 transition-all transform hover:-translate-y-1 text-lg font-medium">
+                        了解专业版
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="py-12 bg-dark border-t border-white/10">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-secondary flex items-center justify-center">
+                            <i class="fa fa-paint-brush text-white text-xl"></i>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-primary to-accent text-gradient">ArtPrompt Pro</span>
+                    </div>
+                    <p class="text-white/60 mb-4">
+                        专业的AI画风反推与提示词优化工具，让你的AI绘画创作更高效、更专业。
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                            <i class="fa fa-twitter text-white/70"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                            <i class="fa fa-github text-white/70"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all">
+                            <i class="fa fa-discord text-white/70"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">产品</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">画风反推</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">提示词分析</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">提示词库</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">专业版</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">资源</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">使用教程</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">常见问题</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">API文档</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">更新日志</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">关于</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">关于我们</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">联系我们</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">隐私政策</a></li>
+                        <li><a href="#" class="text-white/60 hover:text-white transition-colors">服务条款</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/10 pt-8 text-center text-white/50">
+                <p>&copy; 2026 ArtPrompt Pro. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 移动端菜单切换
+        document.getElementById('mobile-menu-btn').
