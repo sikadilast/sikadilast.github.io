@@ -111,6 +111,127 @@
     </div>
 
 <script>
+// 已替换为你的新密钥
+const API_KEY = "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";
+const API_URL = "https://api.openai.com/v1/chat/completions";
+
+// DOM
+const imgFile = document.getElementById('imgFile');
+const btnAnalyzeImg = document.getElementById('btnAnalyzeImg');
+const imgResult = document.getElementById('imgResult');
+
+const rawPrompt = document.getElementById('rawPrompt');
+const btnCheckConflict = document.getElementById('btnCheckConflict');
+const btnOptLegal = document.getElementById('btnOptLegal');
+const promptResult = document.getElementById('promptResult');
+
+const cameraPrompt = document.getElementById('cameraPrompt');
+const btnCameraAnalyze = document.getElementById('btnCameraAnalyze');
+const cameraResult = document.getElementById('cameraResult');
+
+// 工具函数
+async function aiChat(content) {
+    const res = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + API_KEY
+        },
+        body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [{ role: "user", content }],
+            temperature: 0.4
+        })
+    });
+    const data = await res.json();
+    return data.choices[0].message.content;
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+    });
+}
+
+// 1. 图片画风反推
+btnAnalyzeImg.onclick = async () => {
+    const file = imgFile.files[0];
+    if (!file) { imgResult.innerText = "请先选择图片"; return; }
+    imgResult.innerText = "正在解析画风...";
+    try {
+        const b64 = await fileToBase64(file);
+        const res = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + API_KEY
+            },
+            body: JSON.stringify({
+                model: "gpt-4o",
+                messages: [{
+                    role: "user",
+                    content: [
+                        { type: "text", text: "精准拆解这张图的画风、光影、材质、构图、人物特征，生成专业可用的AI绘画正向提示词，精简实用，不要废话" },
+                        { type: "image_url", image_url: { url: b64 } }
+                    ]
+                }]
+            })
+        });
+        const d = await res.json();
+        imgResult.innerText = d.choices[0].message.content;
+    } catch (e) {
+        imgResult.innerText = 解析失败，检查网络或密钥状态;
+    }
+};
+
+// 2. 提示词冲突分析
+btnCheckConflict.onclick = async () => {
+    const text = rawPrompt.value.trim();
+    if (!text) { promptResult.innerText = "请输入提示词"; return; }
+    promptResult.innerText = "正在分析冲突...";
+    const ask = `帮我逐条分析下面AI绘画/视频提示词里的所有冲突问题：画风冲突、元素矛盾、光影冲突、逻辑不合理、AI无法识别的无效词汇。逐条列出问题，不要敷衍：\n${text}`;
+    promptResult.innerText = await aiChat(ask);
+};
+
+// 3. 一键合规优化 + 标注修改原因
+btnOptLegal.onclick = async () => {
+    const text = rawPrompt.value.trim();
+    if (!text) { promptResult.innerText = "请输入提示词"; return; }
+    promptResult.innerText = "正在合规优化并标注...";
+    const ask = `帮我对下面提示词做**一键合规改写**，规避版权、敏感、违规、IP专属词汇。
+必须严格按格式输出：
+1. 优化后完整合规提示词
+2. 逐条标注：【原词汇】→【修改后】→【修改原因（为什么违规/冲突/不合规）】
+原文：
+${text}`;
+    promptResult.innerText = await aiChat(ask);
+};
+
+// 4. 运镜分镜解析
+btnCameraAnalyze.onclick = async () => {
+    const text = cameraPrompt.value.trim();
+    if (!text) { cameraResult.innerText = "请输入运镜分镜提示词"; return; }
+    cameraResult.innerText = "正在解析运镜问题...";
+    const ask = `你是专业AI视频分镜运镜顾问，帮我解析下面运镜、分镜、镜头描述提示词：
+1. 找出哪些运镜词汇冲突、AI识别不出来、会导致画面崩坏
+2. 指出分镜逻辑不合理之处
+3. 给出优化后的标准运镜提示词
+原文：
+${text}`;
+    cameraResult.innerText = await aiChat(ask);
+};
+
+</script>
+</body>
+</html>
+        </div>
+        <div class="result-box" id="cameraResult"></div>
+    </div>
+
+<script>
 // 内置密钥 已写死
 const API_KEY = "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";
 const API_URL = "https://api.openai.com/v1/chat/completions";
